@@ -502,5 +502,6 @@ async def manageban(interaction: Interaction, user: str, action: str):
         await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 if __name__ == "__main__":
-   TOKEN = os.environ.get("BOT_TOKEN"))
+  bot.run(os.environ.get("BOT_TOKEN"))
+
 
