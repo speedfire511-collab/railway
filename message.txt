@@ -10,7 +10,7 @@ import aiofiles
 
 # ---------------- CONFIG ----------------
 # It is recommended to use environment variables for the token in production.
-TOKEN = "MTQ2OTQwODg5MDk4NTc3NTE1NQ.Grrf8k.ZHBmcLib6vDnxsz58_Tm0ZqVMEPjeCIsoqpJ1s"
+TOKEN = os.environ.get("BOT_TOKEN")
 GUILD_ID = 1469058248702169141
 
 # Role and Channel Constants
@@ -502,4 +502,4 @@ async def manageban(interaction: Interaction, user: str, action: str):
         await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
 
 if __name__ == "__main__":
-    bot.run("MTQ2OTQwODg5MDk4NTc3NTE1NQ.G5gmcQ.gnEw91tf0Qy4ATGSPMEIt0mGUYipX0cCP-aH2k")
+   TOKEN = os.environ.get("BOT_TOKEN")
