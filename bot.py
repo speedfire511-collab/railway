@@ -35,16 +35,14 @@ class MyBot(commands.Bot):
         self.vouch_data = {}
         self.active_tickets = {}
 
-    async def setup_hook(self):
+      async def setup_hook(self):
         await self.load_data()
-        guild_obj = Object(id=GUILD_ID)
-        self.tree.copy_global_to(guild=guild_obj)
-        await self.tree.sync(guild=guild_obj)
+        await self.tree.sync()
         
         # Register persistent views so buttons work after bot restarts
         self.add_view(TicketPanel())
         self.add_view(TicketControls())
-        print(f"Logged in as {self.user}. Commands synced to Guild: {GUILD_ID}")
+        print(f"Logged in as {self.user}. Commands synced globally")
 
     async def load_data(self):
         try:
@@ -503,6 +501,7 @@ async def manageban(interaction: Interaction, user: str, action: str):
 
 if __name__ == "__main__":
   bot.run(os.environ.get("BOT_TOKEN"))
+
 
 
 
