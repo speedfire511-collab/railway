@@ -494,6 +494,80 @@ async def manageban(interaction: Interaction, user: str, action: str):
         await interaction.response.send_message("❌ Invalid User ID or mention provided.", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+class TradeConfirmView(ui.View):
+    def __init__(self, trader1: discord.Member, trader2: discord.Member, trade_info: str):
+        super().__init__(timeout=300)
+        self.trader1 = trader1
+        self.trader2 = trader2
+        self.trade_info = trade_info
+        self.trader1_confirmed = False
+        self.trader2_confirmed = False
 
+    async def update_embed(self, interaction: discord.Interaction):
+        awaiting = []
+        if not self.trader1_confirmed:
+            awaiting.append(f"🔴 {self.trader1.mention}")
+        if not self.trader2_confirmed:
+            awaiting.append(f"🔴 {self.trader2.mention}")
+
+        if not awaiting:
+            embed = Embed(title="✅ Trade Confirmed", color=Color.green())
+            embed.description = f"Both traders have confirmed this trade. Please proceed with the rest of the trade."
+            embed.add_field(name="🧑 Trader 1", value=self.trader1.mention, inline=True)
+            embed.add_field(name="🧑 Trader 2", value=self.trader2.mention, inline=True)
+            embed.add_field(name="✅ Status", value="Both traders confirmed", inline=False)
+            embed.set_footer(text="Powered by Trading Portal • Today")
+            for item in self.children:
+                item.disabled = True
+            await interaction.message.edit(embed=embed, view=self)
+        else:
+            embed = Embed(title="✅ Trade Confirmation", color=Color.green())
+            embed.description = "In order to continue this trade, both traders should confirm the trade."
+            embed.add_field(name="📊 Trade Information", value=self.trade_info, inline=False)
+            embed.add_field(name="🧑 Trader 1", value=self.trader1.mention, inline=True)
+            embed.add_field(name="🧑 Trader 2", value=self.trader2.mention, inline=True)
+            embed.add_field(name="⏳ Awaiting Confirmation", value="\n".join(awaiting), inline=False)
+            embed.set_footer(text="Powered by Trading Portal • Today")
+            await interaction.message.edit(embed=embed, view=self)
+
+    @ui.button(label="✅ Confirm Trade (Trader 1)", style=discord.ButtonStyle.success)
+    async def confirm_trader1(self, interaction: discord.Interaction, button: ui.Button):
+        if interaction.user != self.trader1:
+            await interaction.response.send_message("❌ Only Trader 1 can click this button!", ephemeral=True)
+            return
+        self.trader1_confirmed = True
+        button.disabled = True
+        await interaction.response.defer()
+        await self.update_embed(interaction)
+
+    @ui.button(label="✅ Confirm Trade (Trader 2)", style=discord.ButtonStyle.success)
+    async def confirm_trader2(self, interaction: discord.Interaction, button: ui.Button):
+        if interaction.user != self.trader2:
+            await interaction.response.send_message("❌ Only Trader 2 can click this button!", ephemeral=True)
+            return
+        self.trader2_confirmed = True
+        button.disabled = True
+        await interaction.response.defer()
+        await self.update_embed(interaction)
+
+
+@bot.tree.command(name="confirm", description="Start a trade confirmation")
+@app_commands.describe(
+    trader1="First trader",
+    trader2="Second trader",
+    trade_info="Details of the trade"
+)
+async def confirm(interaction: Interaction, trader1: discord.Member, trader2: discord.Member, trade_info: str):
+    view = TradeConfirmView(trader1, trader2, trade_info)
+    
+    embed = Embed(title="✅ Trade Confirmation", color=Color.green())
+    embed.description = "In order to continue this trade, both traders should confirm the trade."
+    embed.add_field(name="📊 Trade Information", value=trade_info, inline=False)
+    embed.add_field(name="🧑 Trader 1", value=trader1.mention, inline=True)
+    embed.add_field(name="🧑 Trader 2", value=trader2.mention, inline=True)
+    embed.add_field(name="⏳ Awaiting Confirmation", value=f"🔴 {trader1.mention}\n🔴 {trader2.mention}", inline=False)
+    embed.set_footer(text="Powered by Trading Portal • Today")
+    
+    await interaction.response.send_message(f"{trader1.mention} {trader2.mention}", embed=embed, view=view)
 if __name__ == "__main__":
     bot.run(os.environ.get("BOT_TOKEN"))
