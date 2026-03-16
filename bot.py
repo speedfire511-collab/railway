@@ -569,13 +569,10 @@ async def confirm(interaction: Interaction, trader1: discord.Member, trader2: di
     embed.set_footer(text="Powered by Trading Portal • Today")
     
     await interaction.response.send_message(f"{trader1.mention} {trader2.mention}", embed=embed, view=view)
-if __name__ == "__main__":
-    bot.run(os.environ.get("BOT_TOKEN"))
 WARN_DATA_FILE = "warns.json"
 TRUSTED_MM_ROLE_ID = 1474846906407452864
 MOD_LOG_CHANNEL_ID = 1476330569507012618
 
-# Load warn data on startup
 async def load_warns():
     try:
         if os.path.exists(WARN_DATA_FILE):
@@ -594,22 +591,18 @@ async def save_warns(data):
 async def warn(interaction: Interaction, user: discord.Member, reason: str):
     if not has_role(interaction.user, TRUSTED_MM_ROLE_ID) and not is_manager(interaction):
         return await interaction.response.send_message("❌ Only Trusted MM can use this command.", ephemeral=True)
-
     warn_data = await load_warns()
     uid = str(user.id)
     if uid not in warn_data: warn_data[uid] = []
     warn_data[uid].append({"reason": reason, "by": interaction.user.id, "time": str(datetime.datetime.now())})
     await save_warns(warn_data)
-
     embed = Embed(title="⚠️ User Warned", color=Color.yellow(), timestamp=datetime.datetime.now())
     embed.add_field(name="User", value=user.mention, inline=True)
     embed.add_field(name="Warned By", value=interaction.user.mention, inline=True)
     embed.add_field(name="Reason", value=reason, inline=False)
     embed.add_field(name="Total Warns", value=str(len(warn_data[uid])), inline=False)
-
     log_ch = interaction.guild.get_channel(MOD_LOG_CHANNEL_ID)
     if log_ch: await log_ch.send(embed=embed)
-
     await interaction.response.send_message(embed=embed)
 
 @bot.tree.command(name="warns", description="Check warns for a user")
@@ -619,11 +612,12 @@ async def warns(interaction: Interaction, user: discord.Member):
     uid = str(user.id)
     if uid not in warn_data or not warn_data[uid]:
         return await interaction.response.send_message(f"✅ {user.mention} has no warnings.", ephemeral=True)
-
     description = ""
     for i, w in enumerate(warn_data[uid], 1):
         description += f"**{i}.** {w['reason']} — by <@{w['by']}>\n"
-
     embed = Embed(title=f"⚠️ Warns for {user}", description=description, color=Color.yellow())
     embed.set_footer(text=f"Total Warns: {len(warn_data[uid])}")
     await interaction.response.send_message(embed=embed)
+
+if __name__ == "__main__":
+    bot.run(os.environ.get("BOT_TOKEN"))
