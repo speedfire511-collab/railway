@@ -41,9 +41,9 @@ class MyBot(commands.Bot):
         
         # Register persistent views so buttons work after bot restarts
         self.add_view(TicketPanel())
-self.add_view(TicketControls())
-self.add_view(IndexTicketPanel())
-self.add_view(IndexTicketControls())
+        self.add_view(TicketControls())
+        self.add_view(IndexTicketPanel())
+        self.add_view(IndexTicketControls())
         print(f"Logged in as {self.user}. Commands synced globally")
 
     async def load_data(self):
