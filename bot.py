@@ -41,7 +41,9 @@ class MyBot(commands.Bot):
         
         # Register persistent views so buttons work after bot restarts
         self.add_view(TicketPanel())
-        self.add_view(TicketControls())
+self.add_view(TicketControls())
+self.add_view(IndexTicketPanel())
+self.add_view(IndexTicketControls()))
         print(f"Logged in as {self.user}. Commands synced globally")
 
     async def load_data(self):
@@ -618,6 +620,122 @@ async def warns(interaction: Interaction, user: discord.Member):
     embed = Embed(title=f"⚠️ Warns for {user}", description=description, color=Color.yellow())
     embed.set_footer(text=f"Total Warns: {len(warn_data[uid])}")
     await interaction.response.send_message(embed=embed)
+EXPERIENCED_MM_ROLE_ID = 1474846906369966204
 
+class IndexTicketPanel(View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label="📋 Open Index Ticket", style=discord.ButtonStyle.primary, custom_id="persistent:open_index_ticket")
+    async def open_index_ticket(self, interaction: Interaction, button: Button):
+        category = interaction.guild.get_channel(TICKETS_CATEGORY_ID)
+        if not category:
+            return await interaction.response.send_message("❌ Ticket category configuration missing.", ephemeral=True)
+
+        overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, attach_files=True),
+            interaction.guild.get_role(EXPERIENCED_MM_ROLE_ID): discord.PermissionOverwrite(view_channel=True, send_messages=False)
+        }
+
+        channel = await interaction.guild.create_text_channel(
+            name=f"index-{interaction.user.name}",
+            category=category,
+            overwrites=overwrites
+        )
+
+        bot.active_tickets[str(channel.id)] = {"owner": interaction.user.id, "claimed": None}
+        await bot.save_data()
+
+        embed = Embed(
+            title="📋 Index Ticket",
+            description=(
+                "✅ Professional Index MM Service\n\n"
+                "• One of our professional Index MMs will be with you shortly\n\n"
+                "📌 Available Bases:\n"
+                "• Divine Base\n"
+                "• Cursed Base\n"
+                "• Ying Yang Base\n"
+                "• Candy Base\n"
+                "• Galaxy Base\n"
+                "• Lava Base\n"
+                "• Rainbow Base\n"
+                "• And more!\n\n"
+                "⬇️ An Index MM will claim your ticket shortly."
+            ),
+            color=Color.gold()
+        )
+
+        await channel.send(
+            content=f"{interaction.user.mention} <@&{EXPERIENCED_MM_ROLE_ID}>",
+            embed=embed,
+            view=IndexTicketControls()
+        )
+
+        await interaction.response.send_message(f"✅ Your index ticket has been created: {channel.mention}", ephemeral=True)
+
+
+class IndexTicketControls(View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label="🛡️ Claim", style=discord.ButtonStyle.success, custom_id="persistent:claim_index_ticket")
+    async def claim(self, interaction: Interaction, button: Button):
+        tid = str(interaction.channel.id)
+        data = bot.active_tickets.get(tid)
+
+        if not data:
+            return await interaction.response.send_message("❌ This is not an active ticket channel.", ephemeral=True)
+
+        if data["claimed"]:
+            return await interaction.response.send_message("❌ This ticket is already claimed.", ephemeral=True)
+
+        if not has_role(interaction.user, EXPERIENCED_MM_ROLE_ID) and not is_manager(interaction):
+            return await interaction.response.send_message("❌ Only Experienced MMs can claim this ticket.", ephemeral=True)
+
+        data["claimed"] = interaction.user.id
+        await bot.save_data()
+
+        button.label = "✅ Claimed"
+        button.disabled = True
+        button.style = discord.ButtonStyle.secondary
+
+        await interaction.channel.set_permissions(interaction.user, send_messages=True, attach_files=True)
+
+        embed = interaction.message.embeds[0]
+        embed.add_field(name="Claimed By", value=interaction.user.mention, inline=False)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @ui.button(label="🔒 Close", style=discord.ButtonStyle.danger, custom_id="persistent:close_index_ticket")
+    async def close(self, interaction: Interaction, button: Button):
+        await close_ticket_logic(interaction)
+
+
+@bot.tree.command(name="setupindexticket", description="Deploy the Index ticket panel in this channel")
+async def setupindexticket(interaction: Interaction):
+    if not is_manager(interaction):
+        return await interaction.response.send_message("❌ No permission. Only Managers can use this.", ephemeral=True)
+
+    embed = Embed(
+        title="📋 Index Ticket",
+        description=(
+            "✅ Professional Index MM Service\n\n"
+            "• One of our professional Index MMs will be with you shortly\n\n"
+            "📌 Available Bases:\n"
+            "• Divine Base\n"
+            "• Cursed Base\n"
+            "• Ying Yang Base\n"
+            "• Candy Base\n"
+            "• Galaxy Base\n"
+            "• Lava Base\n"
+            "• Rainbow Base\n"
+            "• And more!\n\n"
+            "⬇️ Request an Index MM here."
+        ),
+        color=Color.gold()
+    )
+
+    await interaction.channel.send(embed=embed, view=IndexTicketPanel())
+    await interaction.response.send_message("✅ Index ticket panel deployed successfully.", ephemeral=True)
 if __name__ == "__main__":
     bot.run(os.environ.get("BOT_TOKEN"))
