@@ -788,27 +788,6 @@ class IndexInfoView(View):
             )
             await log_ch.send(embed=log_embed)
         self.stop()
-
-    @ui.button(label="Decline", style=discord.ButtonStyle.danger)
-    async def decline(self, interaction: Interaction, button: Button):
-        if interaction.user.id != self.target.id:
-            return await interaction.response.send_message("❌ Only the targeted user can respond to this.", ephemeral=True)
-
-        await interaction.response.send_message(f"{self.target.mention} has declined the offer.")
-
-        log_ch = interaction.guild.get_channel(INFO_LOG_CHANNEL_ID)
-        if log_ch:
-            log_embed = Embed(
-                title="Index Info Command Used",
-                description=f"**User:** {self.target}\n**Staff:** {self.author}\n**Status:** Declined",
-                color=Color.red(),
-                timestamp=datetime.datetime.now()
-            )
-            await log_ch.send(embed=log_embed)
-        self.stop()
-
-
-@bot.tree.command(name="indexinfo", description="Send index scam notification to a user")
 @app_commands.describe(user="The user to target with the index scam notification")
 async def indexinfo(interaction: Interaction, user: discord.Member):
     if not has_role(interaction.user, EXPERIENCED_MM_ROLE_ID) and not is_manager(interaction):
@@ -832,5 +811,25 @@ async def indexinfo(interaction: Interaction, user: discord.Member):
     )
 
     await interaction.response.send_message(content=user.mention, embed=embed, view=IndexInfoView(user, interaction.user))
+    @ui.button(label="Decline", style=discord.ButtonStyle.danger)
+    async def decline(self, interaction: Interaction, button: Button):
+        if interaction.user.id != self.target.id:
+            return await interaction.response.send_message("❌ Only the targeted user can respond to this.", ephemeral=True)
+
+        await interaction.response.send_message(f"{self.target.mention} has declined the offer.")
+
+        log_ch = interaction.guild.get_channel(INFO_LOG_CHANNEL_ID)
+        if log_ch:
+            log_embed = Embed(
+                title="Index Info Command Used",
+                description=f"**User:** {self.target}\n**Staff:** {self.author}\n**Status:** Declined",
+                color=Color.red(),
+                timestamp=datetime.datetime.now()
+            )
+            await log_ch.send(embed=log_embed)
+        self.stop()
+
+
+
     if __name__ == "__main__":
     bot.run(os.environ.get("BOT_TOKEN"))
