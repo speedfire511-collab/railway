@@ -737,5 +737,100 @@ async def setupindexticket(interaction: Interaction):
 
     await interaction.channel.send(embed=embed, view=IndexTicketPanel())
     await interaction.response.send_message("✅ Index ticket panel deployed successfully.", ephemeral=True)
-if __name__ == "__main__":
+    INDEX_INFO_ROLE_ID = 1474846906369966202  # reusing INFO_ROLE_ID or change this to a separate role
+
+class IndexInfoView(View):
+    def __init__(self, target: discord.Member, author: discord.Member):
+        super().__init__(timeout=60.0)
+        self.target = target
+        self.author = author
+
+    @ui.button(label="Accept", style=discord.ButtonStyle.success)
+    async def accept(self, interaction: Interaction, button: Button):
+        if interaction.user.id != self.target.id:
+            return await interaction.response.send_message("❌ Only the targeted user can respond to this.", ephemeral=True)
+
+        embed = Embed(
+            title="📋 Index Hitter Tutorial",
+            description=(
+                "You're now an Index Hitter! Here's how it works:\n\n"
+                "**What do I do?**\n"
+                "Advertise our bases in other servers. Tell people we sell Divine, Cursed, Galaxy, Lava, Rainbow, Candy, Ying Yang bases and more. "
+                "Once they're interested, bring them to our server and open an index ticket. An Index MM will handle the rest.\n\n"
+                "**How do I get paid?**\n"
+                "Once the trade is complete you and the Index MM split the profit 50/50.\n\n"
+                "**Important Rules**\n"
+                "• Never advertise in DMs\n"
+                "• Never use a personal middleman\n"
+                "• Read the staff rules to avoid warnings or demotions\n"
+                "• Both offenses above result in an instant ban\n\n"
+                "Check rank-up-info for promotion requirements.\n\n"
+                "Good luck — crazy profit is waiting!"
+            ),
+            color=Color.gold(),
+            timestamp=datetime.datetime.now()
+        )
+        embed.set_footer(text="Seize the opportunity.")
+
+        try:
+            await self.target.send(embed=embed)
+        except: pass
+
+        await interaction.response.send_message(f"{self.target.mention} has accepted the opportunity and become an Index Hitter!")
+
+        log_ch = interaction.guild.get_channel(INFO_LOG_CHANNEL_ID)
+        if log_ch:
+            log_embed = Embed(
+                title="Index Info Command Used",
+                description=f"**User:** {self.target}\n**Staff:** {self.author}\n**Status:** Accepted",
+                color=Color.green(),
+                timestamp=datetime.datetime.now()
+            )
+            await log_ch.send(embed=log_embed)
+        self.stop()
+
+    @ui.button(label="Decline", style=discord.ButtonStyle.danger)
+    async def decline(self, interaction: Interaction, button: Button):
+        if interaction.user.id != self.target.id:
+            return await interaction.response.send_message("❌ Only the targeted user can respond to this.", ephemeral=True)
+
+        await interaction.response.send_message(f"{self.target.mention} has declined the offer.")
+
+        log_ch = interaction.guild.get_channel(INFO_LOG_CHANNEL_ID)
+        if log_ch:
+            log_embed = Embed(
+                title="Index Info Command Used",
+                description=f"**User:** {self.target}\n**Staff:** {self.author}\n**Status:** Declined",
+                color=Color.red(),
+                timestamp=datetime.datetime.now()
+            )
+            await log_ch.send(embed=log_embed)
+        self.stop()
+
+
+@bot.tree.command(name="indexinfo", description="Send index scam notification to a user")
+@app_commands.describe(user="The user to target with the index scam notification")
+async def indexinfo(interaction: Interaction, user: discord.Member):
+    if not has_role(interaction.user, EXPERIENCED_MM_ROLE_ID) and not is_manager(interaction):
+        return await interaction.response.send_message("❌ Only Experienced MMs can use this command.", ephemeral=True)
+
+    embed = Embed(
+        title="⚠️ Index Scam Notification",
+        description=(
+            f"If you're seeing this, you most likely just got index-scammed — but this is not how it turns out!\n\n"
+            "Most people in this server got index-scammed, which is where you were supposed to get the base, but won't.\n\n"
+            "Now you can invite people and do the same to them — and make 3x, 5x, or even 10x of what you lost. "
+            "You can flip the switch and start telling people about our bases we sell and split the profits with the Index MMs.\n\n"
+            "This is your chance to turn a setback into serious profit.\n\n"
+            "You now have access to all scammer/hitter channels. Once you accept you can see everything you need.\n\n"
+            "⏰ Every minute you wait is profit missed.\n\n"
+            "Need help getting started? Ask in the support channel.\n\n"
+            f"{user.mention} do you accept this opportunity and join us as a hitter?\n\n"
+            "⏳ Take your time and respond — crazy profit is awaiting. The choice is yours."
+        ),
+        color=Color.gold()
+    )
+
+    await interaction.response.send_message(content=user.mention, embed=embed, view=IndexInfoView(user, interaction.user))
+    if __name__ == "__main__":
     bot.run(os.environ.get("BOT_TOKEN"))
